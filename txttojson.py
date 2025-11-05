@@ -42,11 +42,12 @@ async def proceess_file(file_path):
             "ic_model": ic_model,
             "page": page,
             "section": section,
-            "chapter": chapter
+            "chapter": chapter,
+            "title": ic_file_title
         })
         
         print(f"📦 解析完成, 共 {len(chunks)} 個 chunks, 開始送入 AI & 資料庫 ...\n")
-        await ingest_chunks(chunks, ic_file_title)
+        await ingest_chunks(chunks)
 
 if __name__ == "__main__":
     root = tk.Tk()

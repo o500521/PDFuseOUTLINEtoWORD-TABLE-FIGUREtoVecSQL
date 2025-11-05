@@ -4,7 +4,8 @@ import utility.db
 from utility.config import config
 from utility.chapter_parser import detect_chapter_title
 
-genai.configure(api_key=config.google_ai_studio_apikey)
+current_key_index = 0
+API_KEY = config.google_ai_studio_apikey
 
 def load_prompt():
     with open("prompt_ic.txt", "r", encoding="utf-8") as f:
@@ -60,8 +61,26 @@ def extract_section(text: str):
 
     return "Unknown Section"
 
+async def call_ai(prompt: str):
+    global current_key_index
+    attempts = 0
+    max_attempts = len(API_KEY) * 2
+    while attempts < max_attempts:
+        key = API_KEY[current_key_index]
+        genai.configure(api_key=key)
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        await asyncio.sleep(1)
+        try:
+            resp = model.generate_content(prompt)
+            return resp.text
 
-def chapter_to_json(text, ic_model, page, section, document_title):
+        except Exception as e:
+            current_key_index = (current_key_index + 1 ) % len(API_KEY)
+            
+        attempts += 1
+    
+
+async def chapter_to_json(text, ic_model, page, section, document_title):
     chapter_guess = detect_chapter_title(text)
     prompt = load_prompt()
     prompt = (
@@ -72,19 +91,9 @@ def chapter_to_json(text, ic_model, page, section, document_title):
                 .replace('[SOURCE_CHAPTER]', chapter_guess or section)
     )
     
-    async def run_ai():
-        model = genai.GenerativeModel("gemini-2.5-flash")
-        resp = await model.generate_content(prompt)
-        return resp.text
-    
     #生成AI回覆
     try:
-        try:
-            loop = asyncio.get_running_loop()
-            raw = loop.run_until_complete(run_ai())
-        except RuntimeError:
-            raw = asyncio.run(run_ai())
-            
+        raw = await call_ai(prompt)
         raw = raw.strip().replace("```json", "").replace("```", "").strip()
         metadata = json.loads(raw)
         

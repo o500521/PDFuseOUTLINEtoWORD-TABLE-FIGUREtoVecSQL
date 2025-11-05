@@ -1,4 +1,4 @@
-import asyncio, time, json, traceback
+import asyncio, traceback
 from utility.llm_google import chapter_to_json
 
 MAX_RETRY = 5
@@ -8,7 +8,7 @@ async def process_chunk(text, ic_model, page, section, doc_title):
     retry = 0
     while retry < MAX_RETRY:
         try:
-            chapter_to_json(text, ic_model, page, section, doc_title)
+            await chapter_to_json(text, ic_model, page, section, doc_title)
             return True
         except Exception as e:
             retry += 1
@@ -24,12 +24,13 @@ async def process_chunk(text, ic_model, page, section, doc_title):
     
     return False
 
-async def ingest_chunks(chunks, doc_title):
+async def ingest_chunks(chunks):
     for idx, chunk_dict in enumerate(chunks):
         text = chunk_dict["text"]
         ic_model = chunk_dict.get("ic_model", "Unknown")
         page = chunk_dict.get("page", "Unknown")
         section = chunk_dict.get("section", "Unknown")
+        doc_title = chunk_dict.get("title", "Unknown")
         
         print(f"🧠 AI處理塊 {idx+1}/{len(chunks)} : {section}")
         

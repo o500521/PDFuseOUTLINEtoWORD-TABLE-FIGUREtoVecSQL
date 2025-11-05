@@ -17,7 +17,7 @@ from PIL import Image
 import time
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from utility.llm_google import chapter_to_json, extract_ic_model, extract_section
+from utility.llm_google import extract_ic_model, extract_section
 from utility.ingest_queue import ingest_chunks
 
 # GPU 功能已完全移除
@@ -62,7 +62,7 @@ FIGURE_TABLE_TITLE_PATTERN = re.compile(
 
 # 文字清理相關
 TRAILING_PUNCTUATION_PATTERN = re.compile(
-    r'[\s\.]*([\.，。；、:：!！?？]+|\.{3,})\s*$'
+    r'[\s\.]*([\.，。；、:：!! ?？]+|\.{3,})\s*$'
 )
 UNSAFE_FILENAME_CHARS_PATTERN = re.compile(r'[\\/:*?"<>|]+')
 WHITESPACE_PATTERN = re.compile(r'\s+')
@@ -1253,6 +1253,7 @@ def process_chapters_batch(doc, chapters_index_list, all_camelot_tables, base_ou
     os.makedirs(base_out_dir, exist_ok=True)
 
     total_pdf_pages = len(doc)
+    chunks = []
 
     # 效能優化：預先建立表格的頁碼索引，避免每頁都遍歷所有表格
     # 時間複雜度從 O(總頁數 × 總表格數) 降為 O(總表格數 + 總頁數)
@@ -1422,7 +1423,6 @@ def process_chapters_batch(doc, chapters_index_list, all_camelot_tables, base_ou
 
         # === 寫入 TXT 並存至向量資料庫 ===
         
-        chunks = []
         with open(out_path, "w", encoding="utf-8-sig") as f_out:
             for item in sorted(all_chapter_items, key=lambda x: (x['page_num'], x['y_center'])):
                 chunk_text = None
@@ -1456,7 +1456,8 @@ def process_chapters_batch(doc, chapters_index_list, all_camelot_tables, base_ou
                         "text": chunk_text,
                         "ic_model": ic_model,
                         "page": page,
-                        "section": section
+                        "section": section,
+                        "title": title
                     })
 
 
@@ -1465,8 +1466,9 @@ def process_chapters_batch(doc, chapters_index_list, all_camelot_tables, base_ou
         chap_info["tables_count"] = current_tables_count
         updated_index_list.append(chap_info)
 
-        print(f"✅ 完成章節：{title}，文字長度: {current_text_len}，表格數: {current_tables_count}, 共 {len(chunks)} 個 chunks, 開始送 AI ...")
-        asyncio.run(ingest_chunks(chunks, title))
+        print(f"✅ 完成章節：{title}，文字長度: {current_text_len}，表格數: {current_tables_count}, 開始轉送至 AI 模塊!")
+        asyncio.run(ingest_chunks(chunks))
+        print(f"\n✅ 章節：{title} 完成!")
 
     # 已停用輸出 chapters_index.json 到 structured_chapters_final
     # final_output_index = [
@@ -1478,7 +1480,6 @@ def process_chapters_batch(doc, chapters_index_list, all_camelot_tables, base_ou
     # with open(idx_file, "w", encoding="utf-8") as f:
     #     json.dump(final_output_index, f, ensure_ascii=False, indent=2)
     # print(f"\n📄 已輸出最終章節索引檔 (title/page_start/page_end) → {idx_file}")
-
     return updated_index_list
 
 
@@ -1626,13 +1627,14 @@ if __name__ == "__main__":
             )
 
         # PDF 文件在此處關閉 (when fitz.open(pdf_file) scope ends)
+        print("\n✅ PDF 轉換完畢!!")
 
         # ⏱️ 計算總執行時間
         program_end_time = time.time()
         total_program_time = program_end_time - program_start_time
 
         print("\n" + "=" * 60)
-        print("🎉 程式執行完成！")
+        print("🎉 程式執行完成! ")
         print("=" * 60)
         print(f"⏱️  總執行時間: {total_program_time:.2f} 秒")
         print(f"⏱️  總執行時間: {total_program_time/60:.2f} 分鐘")

@@ -7,7 +7,7 @@
 
 - 📄 自動偵測 PDF 目錄並分章節處理
 - 📊 使用 PyMuPDF 快速擷取表格
-- ✅ 在 PDF 切換至 TXT 時, 自動匯集並統一提交給AI進行資料整理
+- ✅ 在 PDF 切換至 TXT 時, 自動提交給AI進行資料整理
 - 🖼️ 自動偵測和儲存圖片
 - 🔍 圖片去重（使用 dHash 演算法）
 - 🎨 生成 debug 頁面以視覺化偵測結果
@@ -108,5 +108,5 @@
     {
         "postgre_user": "你的PostgreSQL使用者名稱",
         "postgre_password": "你的PostgreSQL使用者密碼",
-        "google_ai_studio_apikey": "Google AI Studio API權杖"
+        "google_ai_studio_apikey": {"Google AI Studio API權杖", "Google AI Studio API權杖1", ...}
     }
