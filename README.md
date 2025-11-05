@@ -1,15 +1,20 @@
 # PDF 章節結構化擷取工具
 
-這是一個 Python 工具，用於從 PDF 文件中自動擷取和結構化內容，包括文字、表格和圖片。
+這是一個 Python 工具, 用於從 PDF 文件中自動擷取和結構化內容, 包括文字、表格和圖片. 
+使用前, 請在根目錄添加一個 config.json, 並在下方找到格式進行設定.
 
 ## 功能特色
 
 - 📄 自動偵測 PDF 目錄並分章節處理
 - 📊 使用 PyMuPDF 快速擷取表格
+- ✅ 在 PDF 切換至 TXT 時, 自動匯集並統一提交給AI進行資料整理
 - 🖼️ 自動偵測和儲存圖片
 - 🔍 圖片去重（使用 dHash 演算法）
 - 🎨 生成 debug 頁面以視覺化偵測結果
 - ⚡ 支援多執行緒加速處理
+- 🌍 使用 Google AI Studio 進行資料整理 (TXT 轉 Json)
+- 🤖 使用 BGE-M3 進行資料向量
+- 📁 使用 PostgreSQL + pgvector 進行資料存儲
 
 ### 處理+偵測章節：
   1. find_outline()      → 檢查 PDF 是否有內建書籤
@@ -32,11 +37,11 @@
         [5/6] 儲存圖形並去重（dHash 批次計算、重複檢查）  
         [6/6] 擷取純文字（排除標題、表格、圖形區域）
 ### 寫入 TXT 檔案：
-  8. 輸出：structured_chapters_final→ 按 Y 座標排序，輸出文字/表格/圖片
+  8. 輸出：structured_chapters_final→ 按 Y 座標排序, 輸出文字/表格/圖片
 
 
 ###	頁碼校正問題
-在build_chapters_index()，offset是位移量
+在build_chapters_index(), offset是位移量
 
 ###	圖表擷取問題 
 在process_single_page_and_get_items()
@@ -51,17 +56,17 @@
         table_bottom_y = page_height - y0
 
         is_valid_table = True
-        # 修正：如果表格的底部（最下方）在章節開始座標之前，則排除整個表格
+        # 修正：如果表格的底部（最下方）在章節開始座標之前, 則排除整個表格
         # 表格的任何部分都不應該在章節開始之前
         if start_y_coordinate is not None and table_bottom_y < start_y_coordinate:
             is_valid_table = False
-        # 如果表格的頂部（最上方）在章節結束座標之後，則排除
+        # 如果表格的頂部（最上方）在章節結束座標之後, 則排除
         if end_y_coordinate is not None and table_top_y > end_y_coordinate:
             is_valid_table = False
         if not is_valid_table:
             continue
 
-  說明： 檢查表格的上下邊界是否在章節的 Y 座標範圍內。
+  說明： 檢查表格的上下邊界是否在章節的 Y 座標範圍內. 
 	
 ####  2. 符合條件被認為是有效表格 => 現在輸出成表格（至少 2 行 2 列 + 空白部分比例 < 50%）(條件可以改掉)
 
@@ -88,7 +93,7 @@
 	  第二次擴張：只有當壓到文字時才執行 (NEIGHBOR_GAP_PX = 30  # pdf.py:95)
 	  位置： pdf.py:748-786
 		
-	  第一次擴張跟第二次擴張都是用NEIGHBOR_GAP_PX，如果覺得圖抓太大或太小，可優先考慮更改這個數字，或是使用不同的常數
+	  第一次擴張跟第二次擴張都是用NEIGHBOR_GAP_PX, 如果覺得圖抓太大或太小, 可優先考慮更改這個數字, 或是使用不同的常數
 		
 ###	啟用 Debug 模式 (在main)
     debug_plot=True  # 會輸出整頁pdf圖片 (如果不需要： debug_plot=False)
@@ -98,3 +103,10 @@
 紫色：圖形標題                                                              
 黃色：章節開頭、結尾  
 紅色：表格
+
+### config.json格式
+    {
+        "postgre_user": "你的PostgreSQL使用者名稱",
+        "postgre_password": "你的PostgreSQL使用者密碼",
+        "google_ai_studio_apikey": "Google AI Studio API權杖"
+    }
